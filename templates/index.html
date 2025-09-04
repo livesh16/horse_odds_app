@@ -3,21 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <title>Horse Racing Odds Adjuster</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator.min.css" rel="stylesheet">
     <script src="https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
 </head>
 <body class="p-4">
 <div class="container">
-    <h2 class="mb-3">Horse Racing Odds Adjuster</h2>
+    <h2 class="mb-4">Horse Racing Odds Adjuster</h2>
 
-    <div class="mb-2">
+    <!-- Accordion for explanations -->
+    <div class="accordion mb-4" id="notesAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingNotes">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNotes" aria-expanded="false" aria-controls="collapseNotes">
+                    📘 Explanations (Overround & Features)
+                </button>
+            </h2>
+            <div id="collapseNotes" class="accordion-collapse collapse" aria-labelledby="headingNotes" data-bs-parent="#notesAccordion">
+                <div class="accordion-body">
+                    <h5>⚖️ Overround</h5>
+                    <p>
+                        The <strong>Overround</strong> (bookmaker’s margin) is how much the total 
+                        implied probability of all horses exceeds 100%. This margin ensures the bookmaker 
+                        profits regardless of outcome.
+                    </p>
+                    <ul>
+                        <li><strong>1.00 (100%)</strong> → no margin (fair market).</li>
+                        <li><strong>1.05–1.20 (105%–120%)</strong> → typical bookmaker overround range.</li>
+                        <li>Higher overround = shorter odds (less generous). Lower overround = longer odds (more generous).</li>
+                    </ul>
+                    <p>
+                        If left blank, the tool automatically calculates the Overround from the Port Louis odds.
+                    </p>
+
+                    <hr>
+
+                    <h5>🎯 Features (Adjustments)</h5>
+                    <p>
+                        These features allow fine-tuning of probability weights before scaling them 
+                        back to match the Overround. Each feature slightly shifts the balance of probabilities, 
+                        directly affecting the adjusted odds.
+                    </p>
+                    <ul>
+                        <li><strong>JockeyScore (0-1)</strong>: Probability adjustment based on the jockey’s skill and past performance. Higher scores increase the horse’s chances.</li>
+                        <li><strong>TrainerScore (0-1)</strong>: Reflects the trainer’s recent form and success rate. Horses trained by in-form trainers receive a higher probability weight.</li>
+                        <li><strong>DrawScore (0-1)</strong>: Accounts for the stall or starting draw of the horse. Certain draws may be advantageous depending on race distance and track layout.</li>
+                        <li><strong>GoingScore (0-1)</strong>: Represents how well the horse performs on the current track conditions (e.g., firm, soft, heavy). Horses that prefer the going get a higher weight.</li>
+                        <li><strong>PaceScore (0-1)</strong>: Adjusts for the expected pace of the race and the horse’s running style. Horses suited to the likely pace scenario receive higher probability.</li>
+                    </ul>
+                    
+                    <p class="mb-0">
+                        <strong>Tip:</strong> Features are combined additively in log-probability space, 
+                        then re-normalized to match the Overround. This preserves market margin while 
+                        reflecting feature adjustments.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="mb-3">
         <button id="addRowBtn" class="btn btn-success">Add Row</button>
         <button id="deleteRowBtn" class="btn btn-danger ms-2">Delete Selected Row</button>
     </div>
 
-    <div id="table"></div>
+    <!-- Table -->
+    <div id="table" class="mb-4"></div>
 
+    <!-- Parameters -->
     <div class="row my-3">
         <div class="col-md-4">
             <label>w_market:</label>
@@ -33,9 +87,12 @@
         </div>
     </div>
 
-    <button id="processBtn" class="btn btn-primary mb-3">Process Odds</button>
+    <!-- Process -->
+    <button id="processBtn" class="btn btn-primary mb-4">Process Odds</button>
 </div>
 
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Initialize empty table
     var tableData = [];
@@ -44,11 +101,12 @@
         data: tableData,
         layout:"fitDataStretch",
         reactiveData:true,
-        selectable:1, // select 1 row to delete
+        selectable:1,
         columns:[
             {title:"RaceID", field:"RaceID", editor:"input"},
             {title:"Horse", field:"Horse", editor:"input"},
             {title:"PortLouisOdds", field:"PortLouisOdds", editor:"number"},
+            {title:"Overround", field:"Overround", editor:"number"},
             {title:"JockeyScore", field:"JockeyScore", editor:"number"},
             {title:"TrainerScore", field:"TrainerScore", editor:"number"},
             {title:"DrawScore", field:"DrawScore", editor:"number"},
@@ -56,7 +114,6 @@
             {title:"PaceScore", field:"PaceScore", editor:"number"},
         ],
         rowAdded:function(row){
-            // Defaults for new rows
             ["JockeyScore","TrainerScore","DrawScore","GoingScore","PaceScore"].forEach(col=>{
                 if(row.getData()[col]===0 || row.getData()[col]==null){
                     row.update({[col]:0.5});
@@ -65,12 +122,13 @@
         }
     });
 
-    // Add row button
+    // Add/Delete rows
     document.getElementById("addRowBtn").onclick = function(){
         table.addRow({
             RaceID:"",
             Horse:"",
             PortLouisOdds:0,
+            Overround:"",
             JockeyScore:0.5,
             TrainerScore:0.5,
             DrawScore:0.5,
@@ -78,8 +136,6 @@
             PaceScore:0.5
         });
     };
-
-    // Delete selected row button
     document.getElementById("deleteRowBtn").onclick = function(){
         var selected = table.getSelectedRows();
         selected.forEach(row => row.delete());

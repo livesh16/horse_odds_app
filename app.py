@@ -14,6 +14,7 @@ def get_default_table():
         "RaceID": [""]*5,
         "Horse": [""]*5,
         "PortLouisOdds": [0.0]*5,
+        "Overround": [""]*5,
         "JockeyScore": [0.5]*5,
         "TrainerScore": [0.5]*5,
         "DrawScore": [0.5]*5,
@@ -27,6 +28,8 @@ def enforce_defaults(df):
     feature_cols = ["JockeyScore","TrainerScore","DrawScore","GoingScore","PaceScore"]
     for col in feature_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.5).replace(0.0, 0.5)
+    if "Overround" in df.columns:
+        df["Overround"] = pd.to_numeric(df["Overround"], errors="coerce").fillna("")
     return df
 
 @app.route("/")
@@ -75,7 +78,7 @@ def process():
     )
 
 if __name__ == "__main__":
-    #app.run(debug=True)
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(debug=True)
+    # import os
+    # port = int(os.environ.get("PORT", 5000))
+    # app.run(host="0.0.0.0", port=port, debug=False)
