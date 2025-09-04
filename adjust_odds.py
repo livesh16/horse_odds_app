@@ -57,12 +57,21 @@ def portlouis_to_market_prob(df):
     return (100.0 / odds).astype(float)
 
 def compute_race_overrounds(df, p_market):
-    # Use Overround if present, otherwise compute sum of p_market per race
+    tmp = df.copy()
+    tmp["_p_market_tmp"] = p_market
+
     if "Overround" in df.columns:
-        return pd.to_numeric(df["Overround"], errors="coerce").fillna(1.0)
+        # Convert to numeric and fill NaN temporarily with 0
+        overround_numeric = pd.to_numeric(df["Overround"], errors="coerce")
+        
+        # Compute per-race sums of p_market
+        per_race_sum = tmp.groupby("RaceID")["_p_market_tmp"].transform("sum")
+        
+        # Use the Overround value if present, otherwise fallback to per-race sum
+        final_overround = overround_numeric.fillna(per_race_sum)
+        return final_overround
     else:
-        tmp = df.copy()
-        tmp["_p_market_tmp"] = p_market
+        # Column doesn't exist, use sum of p_market
         return tmp.groupby("RaceID")["_p_market_tmp"].transform("sum")
 
 def apply_feature_adjustments(p_vals, group_df, betas):
@@ -94,6 +103,7 @@ def main(input_csv, output_csv, w_market, alpha, shrink, round_step, decimals, b
 
     logger.debug(f"Parameters in script: w_market={w_market}, alpha={alpha}, shrink={shrink}")
 
+    logger.debug(f"Overround: {df['Overround'].values}")
     if "RaceID" not in df.columns or "Horse" not in df.columns or "PortLouisOdds" not in df.columns:
         raise ValueError("Input CSV must contain 'RaceID', 'Horse', and 'PortLouisOdds' columns.")
 

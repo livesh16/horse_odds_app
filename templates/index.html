@@ -60,6 +60,7 @@
                         <li><strong>1.00 (100%)</strong> → no margin (fair market).</li>
                         <li><strong>1.05–1.20 (105%–120%)</strong> → typical bookmaker overround range.</li>
                         <li>Higher overround = shorter odds (less generous). Lower overround = longer odds (more generous).</li>
+                        <li>If a race does <strong>not have an Overround value</strong>, the script automatically calculates it from the sum of the Port Louis implied probabilities for that race.</li>
                     </ul>
 
                     <hr>
@@ -242,24 +243,7 @@
         const nRaces = parseInt(document.getElementById("numRaces").value)||0;
         for(let i=1;i<=nRaces;i++){
             const val = parseFloat(document.getElementById(`overround_R${i}`).value);
-            if(isNaN(val)){
-                hasError = true;
-            } else {
-                overroundMap[`R${i}`] = val;
-            }
-        }
-
-        // Check if all table RaceIDs have Overround
-        tableData.forEach(row=>{
-            if(!overroundMap[row.RaceID]){
-                hasError = true;
-            }
-        });
-
-        if(hasError){
-            errorDiv.innerHTML = "Please fill all required table fields and ensure every RaceID has an Overround.";
-            errorDiv.classList.remove("d-none");
-            return;
+            overroundMap[`R${i}`] = val;
         }
 
         // Inject Overround into each row
