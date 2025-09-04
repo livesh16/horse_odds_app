@@ -21,11 +21,11 @@ EPS = 1e-12
 
 # Default configuration
 DEFAULT_BETAS = {
-    "jockey": 0.25,
-    "trainer": 0.20,
-    "draw": 0.06,
-    "going": 0.10,
-    "pace": 0.12
+    "jockey": 0.60,
+    "horse_weight": 0.70,
+    "draw": 0.70,
+    "going": 0.40,
+    "pace": 0.30
 }
 DEFAULT_W_MARKET = 0.6
 DEFAULT_ALPHA = 0.97
@@ -78,7 +78,7 @@ def apply_feature_adjustments(p_vals, group_df, betas):
     logp = safe_log(p_vals)
     feature_map = {
         "jockey": "JockeyScore",
-        "trainer": "TrainerScore",
+        "horse_weight": "HorseWeightScore",
         "draw": "DrawScore",
         "going": "GoingScore",
         "pace": "PaceScore"

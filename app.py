@@ -23,7 +23,7 @@ def get_default_table():
         "PortLouisOdds": [0.0]*5,
         "Overround": [""]*5,
         "JockeyScore": [0.5]*5,
-        "TrainerScore": [0.5]*5,
+        "HorseWeightScore": [0.5]*5,
         "DrawScore": [0.5]*5,
         "GoingScore": [0.5]*5,
         "PaceScore": [0.5]*5
@@ -32,7 +32,7 @@ def get_default_table():
 
 # Enforce 0.5 defaults for features
 def enforce_defaults(df):
-    feature_cols = ["JockeyScore","TrainerScore","DrawScore","GoingScore","PaceScore"]
+    feature_cols = ["JockeyScore","HorseWeightScore","DrawScore","GoingScore","PaceScore"]
     for col in feature_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.5).replace(0.0, 0.5)
     if "Overround" in df.columns:

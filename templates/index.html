@@ -72,7 +72,7 @@
                     </p>
                     <ul>
                         <li><strong>JockeyScore (0-1)</strong>: Probability adjustment based on the jockey’s skill and past performance. Higher scores increase the horse’s chances.</li>
-                        <li><strong>TrainerScore (0-1)</strong>: Reflects the trainer’s recent form and success rate. Horses trained by in-form trainers receive a higher probability weight.</li>
+                        <li><strong>HorseWeightScore (0-1)</strong>: Reflects the trainer’s recent form and success rate. Horses trained by in-form trainers receive a higher probability weight.</li>
                         <li><strong>DrawScore (0-1)</strong>: Accounts for the stall or starting draw of the horse. Certain draws may be advantageous depending on race distance and track layout.</li>
                         <li><strong>GoingScore (0-1)</strong>: Represents how well the horse performs on the current track conditions (e.g., firm, soft, heavy). Horses that prefer the going get a higher weight.</li>
                         <li><strong>PaceScore (0-1)</strong>: Adjusts for the expected pace of the race and the horse’s running style. Horses suited to the likely pace scenario receive higher probability.</li>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="col-md-4">
                     <label for="alpha" class="form-label">alpha</label>
-                    <input type="number" id="alpha" value="1.02" step="0.01" min="0.5" max="2" class="form-control">
+                    <input type="number" id="alpha" value="1.0" step="0.01" min="0.5" max="2" class="form-control">
                 </div>
                 <div class="col-md-4">
                     <label for="shrink" class="form-label">shrink</label>
@@ -142,6 +142,35 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    function updateCalculatedOverrounds() {
+        console.log("updateCalculatedOverrounds called");
+        const data = table.getData();
+        const nRaces = parseInt(document.getElementById("numRaces").value) || 0;
+
+        for (let i = 1; i <= nRaces; i++) {
+            let raceID = `R${i}`;
+            let raceRows = data.filter(r => r.RaceID === raceID && r.PortLouisOdds);
+
+            let overround = 0;
+            raceRows.forEach(r => {
+                let odds = parseFloat(r.PortLouisOdds);
+                if (odds > 0) {
+                    overround += 100 / odds; // implied probability in fraction
+                }
+            });
+
+            // Display with 2 decimals and % format
+            let span = document.getElementById(`calc_overround_${raceID}`);
+            if (span) {
+                // multiply by 100 to show as %
+                span.textContent = raceRows.length ? (overround).toFixed(2): "-";
+            }
+            console.log("updateCalculatedOverrounds race " + i + " " + overround);
+
+        }
+    }
+
+
     // Table setup
     var tableData = [];
     var table = new Tabulator("#table", {
@@ -168,19 +197,24 @@
             {title:"Horse", field:"Horse", editor:"input"},
             {title:"PortLouisOdds", field:"PortLouisOdds", editor:"number"},
             {title:"JockeyScore", field:"JockeyScore", editor:"number", responsive:2},
-            {title:"TrainerScore", field:"TrainerScore", editor:"number", responsive:3},
+            {title:"HorseWeightScore", field:"HorseWeightScore", editor:"number", responsive:3},
             {title:"DrawScore", field:"DrawScore", editor:"number", responsive:4},
             {title:"GoingScore", field:"GoingScore", editor:"number", responsive:5},
             {title:"PaceScore", field:"PaceScore", editor:"number", responsive:6},
         ],
         responsiveLayout:true,
         rowAdded:function(row){
-            ["JockeyScore","TrainerScore","DrawScore","GoingScore","PaceScore"].forEach(col=>{
+            ["JockeyScore","HorseWeightScore","DrawScore","GoingScore","PaceScore"].forEach(col=>{
                 if(row.getData()[col]===0 || row.getData()[col]==null){
                     row.update({[col]:0.5});
                 }
             });
         }
+    });
+
+    // Listen for **any data change** (add/edit/delete)
+    table.on("dataChanged", function(data){
+        updateCalculatedOverrounds();
     });
 
     // Add / Delete Rows
@@ -190,7 +224,7 @@
             Horse: "",
             PortLouisOdds: null,
             JockeyScore: 0.5,
-            TrainerScore: 0.5,
+            HorseWeightScore: 0.5,
             DrawScore: 0.5,
             GoingScore: 0.5,
             PaceScore: 0.5
@@ -206,9 +240,16 @@
         for(let i=1;i<=n;i++){
             const div = document.createElement("div");
             div.classList.add("col-6", "col-md-3"); // responsive: 2 per row on mobile, 4 per row on desktop
-            div.innerHTML = `R${i}: <input type="number" step="0.01" min="1" class="form-control race-overround-input" id="overround_R${i}" placeholder="Overround">`;
+            div.innerHTML = `
+                <label>R${i} Overround</label>
+                <input type="number" step="0.01" min="1" 
+                    class="form-control race-overround-input" 
+                    id="overround_R${i}" placeholder="Target Overround">
+                <small class="text-muted">Calculated: <span id="calc_overround_R${i}">-</span></small>
+            `;
             overroundInputsDiv.appendChild(div);
         }
+        updateCalculatedOverrounds();
     });
     document.getElementById("numRaces").dispatchEvent(new Event("input")); // initialize first input
 
