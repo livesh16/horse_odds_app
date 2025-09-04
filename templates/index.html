@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Horse Racing Odds Adjuster</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator.min.css" rel="stylesheet">
@@ -26,9 +27,7 @@
             font-weight: 500;
         }
         .race-overround-input {
-            max-width: 120px;
-            display: inline-block;
-            margin-right: 10px;
+            width: 100%; /* full width in its responsive column */
         }
     </style>
 </head>
@@ -104,10 +103,10 @@
             <i class="bi bi-table"></i> Odds Table
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <button id="addRowBtn" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add Row</button>
-                <button id="deleteRowBtn" class="btn btn-danger ms-2"><i class="bi bi-trash"></i> Delete Selected</button>
-            </div>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <button id="addRowBtn" class="btn btn-success">Add Row</button>
+                <button id="deleteRowBtn" class="btn btn-danger">Delete Selected</button>
+            </div>            
             <div id="table"></div>
         </div>
     </div>
@@ -146,7 +145,8 @@
     var tableData = [];
     var table = new Tabulator("#table", {
         data: tableData,
-        layout:"fitDataStretch",
+        layout:"fitColumns", // fitColumns works better on small screens
+        responsiveLayout:true, // enables automatic hiding of columns
         reactiveData:true,
         selectable:1,
         columns:[
@@ -166,12 +166,13 @@
             },
             {title:"Horse", field:"Horse", editor:"input"},
             {title:"PortLouisOdds", field:"PortLouisOdds", editor:"number"},
-            {title:"JockeyScore", field:"JockeyScore", editor:"number"},
-            {title:"TrainerScore", field:"TrainerScore", editor:"number"},
-            {title:"DrawScore", field:"DrawScore", editor:"number"},
-            {title:"GoingScore", field:"GoingScore", editor:"number"},
-            {title:"PaceScore", field:"PaceScore", editor:"number"},
+            {title:"JockeyScore", field:"JockeyScore", editor:"number", responsive:2},
+            {title:"TrainerScore", field:"TrainerScore", editor:"number", responsive:3},
+            {title:"DrawScore", field:"DrawScore", editor:"number", responsive:4},
+            {title:"GoingScore", field:"GoingScore", editor:"number", responsive:5},
+            {title:"PaceScore", field:"PaceScore", editor:"number", responsive:6},
         ],
+        responsiveLayout:true,
         rowAdded:function(row){
             ["JockeyScore","TrainerScore","DrawScore","GoingScore","PaceScore"].forEach(col=>{
                 if(row.getData()[col]===0 || row.getData()[col]==null){
@@ -203,7 +204,7 @@
         overroundInputsDiv.innerHTML = "";
         for(let i=1;i<=n;i++){
             const div = document.createElement("div");
-            div.classList.add("mb-2");
+            div.classList.add("col-6", "col-md-3"); // responsive: 2 per row on mobile, 4 per row on desktop
             div.innerHTML = `R${i}: <input type="number" step="0.01" min="1" class="form-control race-overround-input" id="overround_R${i}" placeholder="Overround">`;
             overroundInputsDiv.appendChild(div);
         }
