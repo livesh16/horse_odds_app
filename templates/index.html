@@ -5,11 +5,39 @@
     <title>Horse Racing Odds Adjuster</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        h2 {
+            font-weight: 600;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .accordion-button::after {
+            font-size: 1.2rem;
+        }
+        .tabulator .tabulator-header .tabulator-col {
+            font-weight: 500;
+        }
+        .race-overround-input {
+            max-width: 120px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+    </style>
 </head>
-<body class="p-4">
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">🏇 Horse Odds Adjuster</a>
+    </div>
+</nav>
+
 <div class="container">
-    <h2 class="mb-4">Horse Racing Odds Adjuster</h2>
 
     <!-- Accordion for explanations -->
     <div class="accordion mb-4" id="notesAccordion">
@@ -32,16 +60,12 @@
                         <li><strong>1.05–1.20 (105%–120%)</strong> → typical bookmaker overround range.</li>
                         <li>Higher overround = shorter odds (less generous). Lower overround = longer odds (more generous).</li>
                     </ul>
-                    <p>
-                        If left blank, the tool automatically calculates the Overround from the Port Louis odds.
-                    </p>
 
                     <hr>
 
                     <h5>🎯 Features (Adjustments)</h5>
                     <p>
-                        These features allow fine-tuning of probability weights before scaling them 
-                        back to match the Overround. Each feature slightly shifts the balance of probabilities, 
+                        These features allow fine-tuning of probability weights before scaling them back to match the Overround. Each feature slightly shifts the balance of probabilities, 
                         directly affecting the adjusted odds.
                     </p>
                     <ul>
@@ -51,62 +75,95 @@
                         <li><strong>GoingScore (0-1)</strong>: Represents how well the horse performs on the current track conditions (e.g., firm, soft, heavy). Horses that prefer the going get a higher weight.</li>
                         <li><strong>PaceScore (0-1)</strong>: Adjusts for the expected pace of the race and the horse’s running style. Horses suited to the likely pace scenario receive higher probability.</li>
                     </ul>
-                    
-                    <p class="mb-0">
-                        <strong>Tip:</strong> Features are combined additively in log-probability space, 
-                        then re-normalized to match the Overround. This preserves market margin while 
-                        reflecting feature adjustments.
-                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Buttons -->
-    <div class="mb-3">
-        <button id="addRowBtn" class="btn btn-success">Add Row</button>
-        <button id="deleteRowBtn" class="btn btn-danger ms-2">Delete Selected Row</button>
-    </div>
-
-    <!-- Table -->
-    <div id="table" class="mb-4"></div>
-
-    <!-- Parameters -->
-    <div class="row my-3">
-        <div class="col-md-4">
-            <label>w_market:</label>
-            <input type="number" id="w_market" value="0.6" step="0.01" min="0" max="1" class="form-control">
+    <!-- Overround Inputs Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white">
+            <i class="bi bi-sliders"></i> Overround per Race
         </div>
-        <div class="col-md-4">
-            <label>alpha:</label>
-            <input type="number" id="alpha" value="0.97" step="0.01" min="0.5" max="2" class="form-control">
-        </div>
-        <div class="col-md-4">
-            <label>shrink:</label>
-            <input type="number" id="shrink" value="1.0" step="0.01" min="0" max="2" class="form-control">
+        <div class="card-body">
+            <div class="row g-3 mb-2">
+                <div class="col-md-3">
+                    <label for="numRaces" class="form-label">Number of Races</label>
+                    <input type="number" id="numRaces" min="1" value="1" class="form-control">
+                </div>
+            </div>
+            <div id="overroundInputs" class="mb-2"></div>
         </div>
     </div>
 
-    <!-- Process -->
-    <button id="processBtn" class="btn btn-primary mb-4">Process Odds</button>
+    <!-- Table Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            <i class="bi bi-table"></i> Odds Table
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <button id="addRowBtn" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add Row</button>
+                <button id="deleteRowBtn" class="btn btn-danger ms-2"><i class="bi bi-trash"></i> Delete Selected</button>
+            </div>
+            <div id="table"></div>
+        </div>
+    </div>
+
+    <!-- Parameters Card -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-secondary text-white">
+            <i class="bi bi-sliders"></i> Parameters
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="w_market" class="form-label">w_market</label>
+                    <input type="number" id="w_market" value="0.7" step="0.01" min="0" max="1" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label for="alpha" class="form-label">alpha</label>
+                    <input type="number" id="alpha" value="1.02" step="0.01" min="0.5" max="2" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label for="shrink" class="form-label">shrink</label>
+                    <input type="number" id="shrink" value="1.0" step="0.01" min="0" max="2" class="form-control">
+                </div>
+            </div>
+            <button id="processBtn" class="btn btn-primary mt-3"><i class="bi bi-arrow-right-circle"></i> Process Odds</button>
+        </div>
+    </div>
+
+    <div id="errorMsg" class="alert alert-danger d-none mt-3" role="alert"></div>
+
 </div>
 
-<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Initialize empty table
+    // Table setup
     var tableData = [];
-
     var table = new Tabulator("#table", {
         data: tableData,
         layout:"fitDataStretch",
         reactiveData:true,
         selectable:1,
         columns:[
-            {title:"RaceID", field:"RaceID", editor:"input"},
+            { 
+                title: "RaceID", 
+                field: "RaceID", 
+                editor: "select", 
+                editorParams: function(cell) {
+                    // Build the options dynamically based on number of races
+                    const n = parseInt(document.getElementById("numRaces").value) || 0;
+                    let options = {};
+                    for(let i=1; i<=n; i++){
+                        options[`R${i}`] = `R${i}`;
+                    }
+                    return { values: options };
+                }
+            },
             {title:"Horse", field:"Horse", editor:"input"},
             {title:"PortLouisOdds", field:"PortLouisOdds", editor:"number"},
-            {title:"Overround", field:"Overround", editor:"number"},
             {title:"JockeyScore", field:"JockeyScore", editor:"number"},
             {title:"TrainerScore", field:"TrainerScore", editor:"number"},
             {title:"DrawScore", field:"DrawScore", editor:"number"},
@@ -122,33 +179,96 @@
         }
     });
 
-    // Add/Delete rows
-    document.getElementById("addRowBtn").onclick = function(){
+    // Add/Delete Rows
+    document.getElementById("addRowBtn").onclick = () => {
         table.addRow({
-            RaceID:"",
-            Horse:"",
-            PortLouisOdds:0,
-            Overround:"",
-            JockeyScore:0.5,
-            TrainerScore:0.5,
-            DrawScore:0.5,
-            GoingScore:0.5,
-            PaceScore:0.5
+            RaceID: "R1", // default first race
+            Horse: "",
+            PortLouisOdds: null,
+            JockeyScore: 0.5,
+            TrainerScore: 0.5,
+            DrawScore: 0.5,
+            GoingScore: 0.5,
+            PaceScore: 0.5
         });
     };
-    document.getElementById("deleteRowBtn").onclick = function(){
-        var selected = table.getSelectedRows();
-        selected.forEach(row => row.delete());
-    };
+    document.getElementById("deleteRowBtn").onclick = ()=> table.getSelectedRows().forEach(row=>row.delete());
 
-    // Process button
+    // Dynamic Overround inputs
+    const overroundInputsDiv = document.getElementById("overroundInputs");
+    document.getElementById("numRaces").addEventListener("input", function(){
+        const n = parseInt(this.value)||0;
+        overroundInputsDiv.innerHTML = "";
+        for(let i=1;i<=n;i++){
+            const div = document.createElement("div");
+            div.classList.add("mb-2");
+            div.innerHTML = `R${i}: <input type="number" step="0.01" min="1" class="form-control race-overround-input" id="overround_R${i}" placeholder="Overround">`;
+            overroundInputsDiv.appendChild(div);
+        }
+    });
+    document.getElementById("numRaces").dispatchEvent(new Event("input")); // initialize first input
+
+    // Process Odds
     document.getElementById("processBtn").onclick = async function(){
+        const errorDiv = document.getElementById("errorMsg");
+        errorDiv.classList.add("d-none");
+        errorDiv.innerHTML = "";
+
         var tableData = table.getData();
+        let hasError = false;
+
+        // Clear previous highlights
+        table.getRows().forEach(row=>{
+            ["RaceID","Horse","PortLouisOdds"].forEach(col=>{
+                row.getCell(col).getElement().classList.remove("border-danger");
+            });
+        });
+
+        // Validate table rows
+        tableData.forEach((row, idx)=>{
+            ["RaceID","Horse","PortLouisOdds"].forEach(col=>{
+                if(row[col]===null || row[col]===""){
+                    hasError = true;
+                    table.getRows()[idx].getCell(col).getElement().classList.add("border","border-danger");
+                }
+            });
+        });
+
+        // Build overround map
+        let overroundMap = {};
+        const nRaces = parseInt(document.getElementById("numRaces").value)||0;
+        for(let i=1;i<=nRaces;i++){
+            const val = parseFloat(document.getElementById(`overround_R${i}`).value);
+            if(isNaN(val)){
+                hasError = true;
+            } else {
+                overroundMap[`R${i}`] = val;
+            }
+        }
+
+        // Check if all table RaceIDs have Overround
+        tableData.forEach(row=>{
+            if(!overroundMap[row.RaceID]){
+                hasError = true;
+            }
+        });
+
+        if(hasError){
+            errorDiv.innerHTML = "Please fill all required table fields and ensure every RaceID has an Overround.";
+            errorDiv.classList.remove("d-none");
+            return;
+        }
+
+        // Inject Overround into each row
+        tableData.forEach(row => { row.Overround = overroundMap[row.RaceID]; });
+
+        // Send to backend
         var payload = {
             table: tableData,
             w_market: parseFloat(document.getElementById("w_market").value),
             alpha: parseFloat(document.getElementById("alpha").value),
-            shrink: parseFloat(document.getElementById("shrink").value)
+            shrink: parseFloat(document.getElementById("shrink").value),
+            overroundMap: overroundMap
         };
 
         const response = await fetch("/process", {
@@ -156,7 +276,6 @@
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify(payload)
         });
-
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");

@@ -5,8 +5,15 @@ import json
 import zipfile
 from adjust_odds import main
 import io
+import logging
 
 app = Flask(__name__)
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Use DEBUG to see everything
+    format='%(asctime)s [%(levelname)s] %(message)s',
+)
+logger = logging.getLogger(__name__)
 
 # Default table with 5 rows
 def get_default_table():
@@ -43,6 +50,8 @@ def process():
     alpha = float(data.get("alpha", 0.97))
     shrink = float(data.get("shrink", 1.0))
     
+    logger.debug(f"Parameters: w_market={w_market}, alpha={alpha}, shrink={shrink}")
+
     # Convert table JSON to DataFrame
     df = pd.DataFrame(data["table"])
     df = enforce_defaults(df)

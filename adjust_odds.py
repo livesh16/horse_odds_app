@@ -9,6 +9,13 @@ Input & output use integer profit-style odds (like Port Louis: 220 = bet 100, wi
 import argparse
 import pandas as pd
 import numpy as np
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Use DEBUG to see everything
+    format='%(asctime)s [%(levelname)s] %(message)s',
+)
+logger = logging.getLogger(__name__)
 
 EPS = 1e-12
 
@@ -83,6 +90,10 @@ def main(input_csv, output_csv, w_market, alpha, shrink, round_step, decimals, b
     betas = {k: v * shrink for k, v in betas.items()}
 
     df = pd.read_csv(input_csv)
+    logger.debug(f"Read CSV:\n{df.head()}")
+
+    logger.debug(f"Parameters in script: w_market={w_market}, alpha={alpha}, shrink={shrink}")
+
     if "RaceID" not in df.columns or "Horse" not in df.columns or "PortLouisOdds" not in df.columns:
         raise ValueError("Input CSV must contain 'RaceID', 'Horse', and 'PortLouisOdds' columns.")
 
@@ -124,8 +135,8 @@ def main(input_csv, output_csv, w_market, alpha, shrink, round_step, decimals, b
     # Step 7: Apply overround → final probability
     df["p_final"] = df["p_skewed"].astype(float) * df["race_overround"].astype(float)
 
-    # Step 8: Convert to integer AdjustedProfitOdds
-    df["AdjustedProfitOdds"] = round_to_step(((1 / df["p_final"]) - 1) * 100, round_step).astype(int)
+    # Step 8: Convert to integer AdjustedPayoutOdds
+    df["AdjustedPayoutOdds"] = round_to_step((100.0 / df["p_final"]), round_step).astype(int)
 
     # Step 9: Round probability columns for readability
     prob_cols = ["p_market_raw", "p_true", "p_feat_raw", "p_blended", "p_skewed", "p_final"]
@@ -135,7 +146,7 @@ def main(input_csv, output_csv, w_market, alpha, shrink, round_step, decimals, b
 
     # Step 10: Output columns
     out_cols = [
-        "RaceID", "Horse", "PortLouisOdds", "AdjustedProfitOdds",
+        "RaceID", "Horse", "PortLouisOdds", "AdjustedPayoutOdds",
         "p_final", "p_true", "p_feat_raw"
     ]
     df[out_cols].to_csv(output_csv, index=False, float_format=f"%.{decimals}f")
