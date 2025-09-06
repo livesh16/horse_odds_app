@@ -126,8 +126,6 @@ MIT License – feel free to use and modify this project.
 
 ---
 
----
-
 ## Live App
 
 Check out the deployed app here: [Horse Racing Odds Adjuster](https://horse-odds-app.onrender.com/)
