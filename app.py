@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, jsonify
 import pandas as pd
 import numpy as np
 import json
@@ -49,14 +49,12 @@ def process():
     w_market = float(data.get("w_market", 0.6))
     alpha = float(data.get("alpha", 0.97))
     shrink = float(data.get("shrink", 1.0))
-    
-    logger.debug(f"Parameters: w_market={w_market}, alpha={alpha}, shrink={shrink}")
 
     # Convert table JSON to DataFrame
     df = pd.DataFrame(data["table"])
     df = enforce_defaults(df)
-    
-    # Save CSVs in-memory
+
+    # Save CSVs
     input_csv = "input.csv"
     output_csv = "output.csv"
     df.to_csv(input_csv, index=False)
@@ -72,7 +70,25 @@ def process():
         decimals=3
     )
 
-    # Create ZIP in memory
+    # Read processed output
+    output_df = pd.read_csv(output_csv)
+
+    # Return both input and output as JSON
+    output = jsonify({
+        "input": df.to_dict(orient="records"),
+        "output": output_df.to_dict(orient="records")
+    })
+
+    logger.debug(f"Backend /process result input = {df.to_dict(orient='records')}")
+    logger.debug(f"Backend /process result ouput = {output_df.to_dict(orient='records')}")
+
+    return output
+
+@app.route("/download", methods=["GET"])
+def download_zip():
+    input_csv = "input.csv"
+    output_csv = "output.csv"
+
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as zf:
         zf.write(input_csv)

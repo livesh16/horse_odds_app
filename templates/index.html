@@ -132,9 +132,49 @@
                     <input type="number" id="shrink" value="1.0" step="0.01" min="0" max="2" class="form-control">
                 </div>
             </div>
-            <button id="processBtn" class="btn btn-primary mt-3"><i class="bi bi-arrow-right-circle"></i> Process Odds</button>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button id="processBtn" class="btn btn-primary">
+                  <i class="bi bi-arrow-right-circle"></i> Process Odds
+                </button>
+                <button id="downloadBtn" class="btn btn-success">
+                  <i class="bi bi-download"></i> Download CSVs
+                </button>
+            </div>
         </div>
     </div>
+
+    <!-- Results Card -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-table"></i> Results</span>
+        <button id="downloadBtn" class="btn btn-success btn-sm">
+            <i class="bi bi-download"></i> Download CSVs
+        </button>
+        </div>
+        <div class="card-body">
+    
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="resultsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="input-tab" data-bs-toggle="tab" data-bs-target="#inputTabPane" type="button" role="tab">Input Data</button>
+            </li>
+            <li class="nav-item" role="presentation">
+            <button class="nav-link" id="output-tab" data-bs-toggle="tab" data-bs-target="#outputTabPane" type="button" role="tab">Output Data</button>
+            </li>
+        </ul>
+    
+        <!-- Tab Panes -->
+        <div class="tab-content mt-3">
+            <div class="tab-pane fade show active" id="inputTabPane" role="tabpanel">
+            <div id="inputTable"></div>
+            </div>
+            <div class="tab-pane fade" id="outputTabPane" role="tabpanel">
+            <div id="outputTable"></div>
+            </div>
+        </div>
+    
+        </div>
+    </div>  
 
     <div id="errorMsg" class="alert alert-danger d-none mt-3" role="alert"></div>
 
@@ -172,6 +212,9 @@
 
 
     // Table setup
+    var inputTabulator = null;
+    var outputTabulator = null;
+
     var tableData = [];
     var table = new Tabulator("#table", {
         data: tableData,
@@ -253,7 +296,6 @@
     });
     document.getElementById("numRaces").dispatchEvent(new Event("input")); // initialize first input
 
-    // Process Odds
     document.getElementById("processBtn").onclick = async function(){
         const errorDiv = document.getElementById("errorMsg");
         errorDiv.classList.add("d-none");
@@ -262,14 +304,13 @@
         var tableData = table.getData();
         let hasError = false;
 
-        // Clear previous highlights
+        // Clear highlights + validate required fields
         table.getRows().forEach(row=>{
             ["RaceID","Horse","PortLouisOdds"].forEach(col=>{
                 row.getCell(col).getElement().classList.remove("border-danger");
             });
         });
 
-        // Validate table rows
         tableData.forEach((row, idx)=>{
             ["RaceID","Horse","PortLouisOdds"].forEach(col=>{
                 if(row[col]===null || row[col]===""){
@@ -278,19 +319,16 @@
                 }
             });
         });
+        if (hasError) return;
 
-        // Build overround map
-        let overroundMap = {};
+        // Build payload
         const nRaces = parseInt(document.getElementById("numRaces").value)||0;
+        let overroundMap = {};
         for(let i=1;i<=nRaces;i++){
-            const val = parseFloat(document.getElementById(`overround_R${i}`).value);
-            overroundMap[`R${i}`] = val;
+            overroundMap[`R${i}`] = parseFloat(document.getElementById(`overround_R${i}`).value);
         }
-
-        // Inject Overround into each row
         tableData.forEach(row => { row.Overround = overroundMap[row.RaceID]; });
 
-        // Send to backend
         var payload = {
             table: tableData,
             w_market: parseFloat(document.getElementById("w_market").value),
@@ -304,16 +342,62 @@
             headers:{"Content-Type":"application/json"},
             body: JSON.stringify(payload)
         });
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "adjusted_odds.zip";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+
+        const result = await response.json();
+
+        // Destroy old instances (avoid duplicate grey overlays)
+        if (inputTabulator) inputTabulator.destroy();
+        if (outputTabulator) outputTabulator.destroy();
+
+        // Init new tables
+        inputTabulator = new Tabulator("#inputTable", {
+            data: result.input,
+            layout:"fitColumns",
+            columns:[
+                {title:"RaceID", field:"RaceID"},
+                {title:"Horse", field:"Horse"},
+                {title:"PortLouisOdds", field:"PortLouisOdds"},
+                {title:"JockeyScore", field:"JockeyScore"},
+                {title:"HorseWeightScore", field:"HorseWeightScore"},
+                {title:"DrawScore", field:"DrawScore"},
+                {title:"GoingScore", field:"GoingScore"},
+                {title:"PaceScore", field:"PaceScore"},
+                {title:"Overround", field:"Overround"}
+            ]
+        });
+
+        outputTabulator = new Tabulator("#outputTable", {
+            data: result.output,
+            layout:"fitColumns",
+            columns:[
+                {title:"RaceID", field:"RaceID"},
+                {title:"Horse", field:"Horse"},
+                {title:"PortLouisOdds", field:"PortLouisOdds"},
+                {title:"AdjustedPayoutOdds", field:"AdjustedPayoutOdds"},
+                {title:"p_final", field:"p_final"},
+                {title:"p_true", field:"p_true"},
+                {title:"p_feat_raw", field:"p_feat_raw"}
+            ]
+        });
     };
+
+    document.getElementById("downloadBtn").onclick = function(){
+        window.location.href = "/download";
+    };
+
+    // Ensure Tabulator tables render correctly when switching Bootstrap tabs
+    // Tabulator needs to know the container width to size columns properly. 
+    // If a table is inside a hidden tab (display:none), it cannot measure width correctly,
+    // which can cause layout glitches or flashes when the tab is shown. 
+    // This listener redraws the table immediately after a tab becomes visible, 
+    // preventing visual flashes and ensuring proper column sizing.
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', function () {
+            if (inputTabulator) inputTabulator.redraw(true);
+            if (outputTabulator) outputTabulator.redraw(true);
+        });
+    });
+
 </script>
 </body>
 </html>
