@@ -15,24 +15,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Default table with 5 rows
-def get_default_table():
-    data = {
-        "RaceID": [""]*5,
-        "Horse": [""]*5,
-        "PortLouisOdds": [0.0]*5,
-        "Overround": [""]*5,
-        "JockeyScore": [0.5]*5,
-        "HorseWeightScore": [0.5]*5,
-        "DrawScore": [0.5]*5,
-        "GoingScore": [0.5]*5,
-        "PaceScore": [0.5]*5
-    }
-    return pd.DataFrame(data)
-
 # Enforce 0.5 defaults for features
 def enforce_defaults(df):
-    feature_cols = ["JockeyScore","HorseWeightScore","DrawScore","GoingScore","PaceScore"]
+    feature_cols = ["JockeyScore","HorseWeightScore","DrawScore", "Liability", "GoingScore","PaceScore"]
     for col in feature_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.5).replace(0.0, 0.5)
     if "Overround" in df.columns:

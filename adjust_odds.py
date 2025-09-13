@@ -25,7 +25,8 @@ DEFAULT_BETAS = {
     "horse_weight": 0.70,
     "draw": 0.70,
     "going": 0.40,
-    "pace": 0.30
+    "pace": 0.30,
+    "liability": 1.0
 }
 DEFAULT_W_MARKET = 0.6
 DEFAULT_ALPHA = 0.97
@@ -81,12 +82,19 @@ def apply_feature_adjustments(p_vals, group_df, betas):
         "horse_weight": "HorseWeightScore",
         "draw": "DrawScore",
         "going": "GoingScore",
-        "pace": "PaceScore"
+        "pace": "PaceScore",
+        "liability": "Liability"
     }
     for key, col in feature_map.items():
         if key in betas and col in group_df.columns:
             x = pd.to_numeric(group_df[col], errors="coerce").fillna(0.5).values.astype(float)
-            centered = x - 0.5
+            if key == "liability":
+                liabilities = pd.to_numeric(group_df[col], errors="coerce").fillna(0.0).values.astype(float)
+                scale_factor = np.max(np.abs(liabilities)) + EPS
+                centered = -liabilities / scale_factor   # range [-1,1]
+                # optional: centered = np.tanh(centered)  # squash further
+            else:
+                centered = x - 0.5
             logp += betas[key] * centered
     return np.exp(logp)  # un-normalized
 

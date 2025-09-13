@@ -239,12 +239,13 @@
             {title:"JockeyScore", field:"JockeyScore", editor:"number", responsive:2},
             {title:"HorseWeightScore", field:"HorseWeightScore", editor:"number", responsive:3},
             {title:"DrawScore", field:"DrawScore", editor:"number", responsive:4},
-            {title:"GoingScore", field:"GoingScore", editor:"number", responsive:5},
-            {title:"PaceScore", field:"PaceScore", editor:"number", responsive:6},
+            {title:"Liability", field:"Liability", editor:"number", responsive:5},
+            {title:"GoingScore", field:"GoingScore", editor:"number", responsive:6},
+            {title:"PaceScore", field:"PaceScore", editor:"number", responsive:7},
         ],
         responsiveLayout:true,
         rowAdded:function(row){
-            ["JockeyScore","HorseWeightScore","DrawScore","GoingScore","PaceScore"].forEach(col=>{
+            ["JockeyScore","HorseWeightScore","DrawScore", "Liability", "GoingScore","PaceScore"].forEach(col=>{
                 if(row.getData()[col]===0 || row.getData()[col]==null){
                     row.update({[col]:0.5});
                 }
